@@ -4,7 +4,7 @@ import pandas as pd
 import re
 import pdb
 import argparse
-
+import numpy as np
 
 def pull_truthiness(n_size):
 
@@ -73,20 +73,23 @@ def pull_truthiness(n_size):
 	results['subject'] =  results.subject.str.replace('[^\x00-\x7F]','')
 	results['name'] =  results.name.str.replace('[^\x00-\x7F]','')
 
+	results['true_false'].replace('', np.nan, inplace=True)
+
+	results.dropna(subset=['true_false'], inplace=True)
 
 	##Replace with db_upload
-	results.to_csv("C:\\users\\augus\\desktop\\truthiness\\raw_truthiness.csv",index=False)
+	results.to_csv("C:\\users\\augus\\desktop\\main\\truthiness\\raw_truthiness.csv",index=False)
 
 def estimate_truthiness():
 
 	##Replace with db_download
-	results = pd.read_csv('C:\\users\\augus\\desktop\\truthiness\\raw_truthiness.csv')
+	results = pd.read_csv('C:\\users\\augus\\desktop\\main\\truthiness\\raw_truthiness.csv')
 
 	results['pd_date'] = pd.to_datetime(results['date'])
 
-	results['total_statements'] = results.groupby('name').cumcount(ascending=False) + 1
-
 	results = results.sort_values(by=['date'],ascending=True)
+
+	results['total_statements'] = results.groupby('name').cumcount(ascending=True) + 1
 
 	##Running total & pct of true statements
 
@@ -110,7 +113,7 @@ def estimate_truthiness():
 	results = results.sort_values(by=['date'],ascending=False)
 
 	try:
-		results.to_csv("C:\\users\\augus\\desktop\\truthiness\\clean_truthiness.csv",index=False)
+		results.to_csv("C:\\users\\augus\\desktop\\main\\truthiness\\clean_truthiness.csv",index=False)
 	except Exception as ex:
 		print str(ex)
 
