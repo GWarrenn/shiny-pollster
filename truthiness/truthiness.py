@@ -5,8 +5,10 @@ import re
 import pdb
 import argparse
 import numpy as np
+import sqlalchemy
+from sqlalchemy import *
 
-def pull_truthiness(n_size):
+def pull_truthiness(n_size,upload):
 
 	cols = ['date','name',
 		'ruling','party','url','subject','statement_text']
@@ -48,6 +50,43 @@ def pull_truthiness(n_size):
 
 		results = results.append(data)
 
+	##Replace with db_upload
+	if upload:
+
+		results['statement_text'] = results['statement_text'].str.slice(0,250)
+
+		engine = sqlalchemy.create_engine('postgresql://postgres@localhost:5432/postgres')
+
+		conn = engine.connect()
+		metadata = MetaData(bind=engine)
+
+		truthiness_db = Table('truthiness', metadata, autoload_with=engine) 
+
+		rows = results.to_dict('records')
+
+		error_msg = 0
+
+		for row in rows:
+			try:
+			    conn.execute(truthiness_db.insert(), row)
+			except Exception as ex:
+				print str(ex)
+				error_msg += 1
+		
+		if error_msg == 0:
+			print '...upload complete with no issues'
+		if error_msg > 0:
+			print 'Issue(s) with upload: ', error_msg, ' row(s) not uploaded to database'
+	else:
+		results.to_csv("C:\\users\\augus\\desktop\\main\\truthiness\\raw_truthiness.csv",index=False)
+
+def estimate_truthiness():
+
+	##Replace with db_download
+	results = pd.read_csv('C:\\users\\augus\\desktop\\main\\truthiness\\raw_truthiness.csv')
+
+	## Recoding truthiness
+
 	results['true_false'] = results['ruling']
 	recode = {'Half-True': 'Half-True', 'Mostly True': 'True', 'True': 'True', 'Mostly False': 'False','False':'False','Pants on Fire!':'False'}
 	results['true_false'] = results['true_false'].apply(str).map(recode)
@@ -68,7 +107,6 @@ def pull_truthiness(n_size):
 	recode = {'Half-True': 0, 'Mostly True': 0, 'True': 0, 'Mostly False': 0,'False':0,'Pants on Fire!':1}
 	results['pants_on_fire'] = results['pants_on_fire'].apply(str).map(recode)
 
-
 	results['statement_text'] =  results.statement_text.str.replace('[^\x00-\x7F]','')
 	results['subject'] =  results.subject.str.replace('[^\x00-\x7F]','')
 	results['name'] =  results.name.str.replace('[^\x00-\x7F]','')
@@ -76,14 +114,6 @@ def pull_truthiness(n_size):
 	results['true_false'].replace('', np.nan, inplace=True)
 
 	results.dropna(subset=['true_false'], inplace=True)
-
-	##Replace with db_upload
-	results.to_csv("C:\\users\\augus\\desktop\\main\\truthiness\\raw_truthiness.csv",index=False)
-
-def estimate_truthiness():
-
-	##Replace with db_download
-	results = pd.read_csv('C:\\users\\augus\\desktop\\main\\truthiness\\raw_truthiness.csv')
 
 	results['pd_date'] = pd.to_datetime(results['date'])
 
@@ -117,6 +147,7 @@ def estimate_truthiness():
 	except Exception as ex:
 		print str(ex)
 
+
 #################
 
 def truthiness_cmd():
@@ -125,12 +156,13 @@ def truthiness_cmd():
     # set up the parser/argument information with command line help
     parser= argparse.ArgumentParser(description="Find out the truth...or how little it's told")
     parser.add_argument('n_size', help="Total amount of statements to pull")
+    parser.add_argument('--upload', '-u',default=None,help="Upload data to database. If not specified will write to local csv file")
 
     args=parser.parse_args()
 
-    pull_truthiness(args.n_size)
+    pull_truthiness(args.n_size,args.upload)
 
-    estimate_truthiness()
+    #estimate_truthiness()
 
 #################
 
