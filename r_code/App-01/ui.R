@@ -1,3 +1,17 @@
+library("pollstR")
+
+charts = pollster_charts()
+
+max_charts = length(charts$content$items)
+
+chart_list <- list()
+
+chart_list[[1]] <- ""
+
+for (chart in 1:max_charts){
+  list_position = chart + 1
+  chart_list[[list_position]] <- charts$content$items[[chart]]$title
+}
 
 shinyUI(fluidPage(
 
@@ -10,6 +24,10 @@ shinyUI(fluidPage(
            uiOutput("xcol"),
       textInput("text", label = h4("Enter graph title"), value = ""), 
 
+      selectizeInput("chart", "Or select from list:", 
+                    choices=chart_list),
+        hr(),
+      
       checkboxInput(inputId = 'header', 
                     label = 'Header', 
                     value = TRUE),
