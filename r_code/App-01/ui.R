@@ -1,21 +1,31 @@
 library("pollstR")
+library("readr")
 
-charts = pollster_charts()
-
-max_charts = length(charts$content$items)
+slug_list <- list('favorable-ratings','2016-president','2012-president','obama-job-approval','2016-senate','2014-senate'
+                  ,'uk-eu-referendum')
 
 chart_list <- list()
 
 chart_list[[1]] <- ""
+chart_num = 2
 
-for (chart in 1:max_charts){
-  list_position = chart + 1
-  chart_list[[list_position]] <- charts$content$items[[chart]]$title
+for (i in slug_list){
+  charts = pollster_charts(tags = i)
+  for (z in 1:length(charts$content$items)) {
+    chart_list[chart_num] <- charts$content$items[[z]]$title
+    chart_num = chart_num + 1
+  }
 }
+
+## need to manually add charts for 'untagged' items: 2018 house race, trump job approval
+
+chart_list[chart_num] <- "2018 National House Race"
+chart_list[chart_num + 1] <- "Trump Job Approval"
+
 
 shinyUI(fluidPage(
 
-  titlePanel("Data Visualizer"),
+  titlePanel("Polling Dashboard"),
    sidebarLayout(position = "left",
     sidebarPanel(
 

@@ -1,8 +1,10 @@
-name: app-01
-title:
+name: App-01
+title: App-01
+username:
 account: gwarrenn
 server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
 appId: 203292
-bundleId: 933121
+bundleId: 1127557
 url: https://gwarrenn.shinyapps.io/app-01/
-when: 1502219983.24748
+when: 1512976586.79248

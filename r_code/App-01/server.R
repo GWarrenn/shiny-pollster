@@ -2,6 +2,8 @@ library(shiny)
 library(ggplot2)
 library(magrittr)
 library(reshape2)
+library("pollstR")
+library("readr")
 
 shinyServer(function(input, output) {
 
@@ -17,20 +19,47 @@ shinyServer(function(input, output) {
           }
           else {
             ## load pollster data
-            charts = pollster_charts()
             
-            max_charts = length(charts$content$items)
+            slug_list <- list('favorable-ratings','2016-president','2012-president','obama-job-approval','2016-senate','2014-senate'
+                         ,'uk-eu-referendum')
             
-            slug_list <- list()
+            max_page = 0 
+            chart_num = 1
             
-            for (i in 1:max_charts){
-              slug_list[[charts$content$items[[i]]$title]] <- charts$content$items[[i]]$question$slug
+            for (i in slug_list){
+              charts = pollster_charts(tags = i)
+              for (z in 1:length(charts$content$items)) {
+                slug_list[[charts$content$items[[z]]$title]] <- charts$content$items[[z]]$slug
+              }
             }
+            
+            slug_list["Trump Job Approval"] <- "trump-job-approval"
+            slug_list["2018 National House Race"] <- "2018-national-house-race"
+            
             chart = trimws(chart)
             slug = slug_list[[chart]]
-            polls <- pollster_questions_responses_raw(slug)
-            df <- data.frame(do.call("c",list(polls$content)))
-            names(df)[names(df) == 'pollster_label'] <- 'choice'
+            polls <- pollster_charts_polls(slug)
+            initial_dataset <- data.frame(do.call("c",list(polls$content)))
+            
+            metadata <- initial_dataset[c(4:ncol(initial_dataset))] 
+            
+            drop_columns <- colnames(test)
+            drop_columns <- drop_columns[drop_columns != "poll_slug"]
+            myvars <- names(initial_dataset) %in% drop_columns
+            reshape_data <- initial_dataset[!myvars]
+            
+            varying_cols <- colnames(reshape_data)
+            varying_cols <- varying_cols[varying_cols != "poll_slug"]
+            
+            long <- reshape(reshape_data, 
+                            varying = varying_cols, 
+                            v.names = "value",
+                            timevar = "choice", 
+                            times = varying_cols,
+                            direction = "long")
+            
+            df <- merge(long,metadata,by="poll_slug")
+            
             names(df)[names(df) == 'survey_house'] <- 'pollster'
             names(df)[names(df) == 'mode'] <- 'method'
             names(df)[names(df) == 'sample_subpopulation'] <- 'subpopulation'
@@ -64,9 +93,11 @@ shinyServer(function(input, output) {
         plotObject()
     })
     output$resultstable <- renderDataTable ({
-		tabledata <- filedata()[,c("pollster","start_date","method","subpopulation","choice","value")]
-		tabledata <- dcast(tabledata,pollster + start_date + method + subpopulation ~ choice,value.var="value",fun.aggregate = sum)	
-        print(tabledata)
+        if(!is.null(filedata())) {
+		  tabledata <- filedata()[,c("pollster","start_date","method","subpopulation","choice","value")]
+		  tabledata <- dcast(tabledata,pollster + start_date + method + subpopulation ~ choice,value.var="value",fun.aggregate = sum)	
+          print(tabledata)
+        }
 
     })
     
