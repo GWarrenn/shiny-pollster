@@ -1,5 +1,5 @@
 # shiny-pollster
 
-Creating an interactive shiny dashboard to display and track polling data from the HuffPost Pollster API or any other data source.
+The idea behind this project is to creating an interactive shiny dashboard to allow users to display and track polling data from the HuffPost Pollster API, as well as easily upload their own polling data and download graphs and tables.
 
 https://gwarrenn.shinyapps.io/app-01/
